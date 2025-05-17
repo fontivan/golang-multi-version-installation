@@ -1,20 +1,10 @@
 #!/usr/bin/env bash
 
-# Normally I would prefer to set these options, but since this has to be sourced it causes a lot of problems with the interactive shell
-# set -eou pipefail
+# Exit on error, undefined variable, or failed pipeline command
+set -euo pipefail
 
-# Since this script has to be sourced, it needs to work in zsh too
-if [[ -n "${BASH_VERSION-}" ]]; then
-    SCRIPT_PATH="${BASH_SOURCE[0]}"
-elif [[ -n "${ZSH_VERSION-}" ]]; then
-    SCRIPT_PATH="${(%):-%N}"
-else
-    echo "Unsupported shell" >&2
-    exit 1
-fi
-
-# Use subshell to avoid cd affecting current directory
-SCRIPT_DIR=$(cd -- "$(dirname -- "$SCRIPT_PATH")" &> /dev/null && pwd)
+# Resolve the directory of this script
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 
 # Load shared functions and variables (e.g., check_version, INSTALL_DIR, check_dependencies)
 source "${SCRIPT_DIR}/common.sh"
@@ -41,32 +31,24 @@ function main {
     version="$1"
 
     # Validate the provided version string format
-    if ! check_version "$1"; then
-        echo "Invalid or missing version"
-        echo "The following versions are installed:"
-        ls "${INSTALL_DIR}"
+    if ! check_version "$version"; then
+        echo "Invalid or missing version" >&2
+        echo "The following versions are installed:" >&2
+        ls "${INSTALL_DIR}" >&2
         return 1
     fi
-
-    echo "Setting current golang version to ${version}"
 
     # Verify the requested Go version is installed
     if [[ -d "${INSTALL_DIR}/${version}" ]]; then
         # Set GOROOT to the chosen version's go directory
-        GOROOT="${INSTALL_DIR}/${version}/go"
+        local goroot="${INSTALL_DIR}/${version}/go"
+        local new_path="${goroot}/bin:$(clean_path)"
 
-        # Prepend the chosen Go version's bin directory to PATH, cleaning old entries
-        PATH="${INSTALL_DIR}/${version}/go/bin:$(clean_path)"
-
-        echo "Setting GOROOT to '${GOROOT}'"
-        echo "Setting PATH to '${PATH}'"
-
-        # Export variables for current shell session
-        export GOROOT
-        export PATH
+        # Output export statements for eval
+        echo "export GOROOT=${goroot}"
+        echo "export PATH=${new_path}"
     else
-        # Error if the requested version directory does not exist
-        echo "${version} was not found in ${INSTALL_DIR}"
+        echo "${version} was not found in ${INSTALL_DIR}" >&2
         return 1
     fi
 }

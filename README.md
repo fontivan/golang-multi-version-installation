@@ -12,10 +12,10 @@ To install multiple golang versions just execute the installation script:
 
 ## Setting a new version
 
-To set the environment variables correctly you must source the script, not just execute it:
+To set the environment variables correctly you must eval it to set the variables in your current session:
 
 ```bash
-pushd /path/to/checkout/golang-multi-version-installation/src; source ./set-current-golang.sh 1.20.14; popd;
+eval $(/path/to/checkout/golang-multi-version-installation/src/set-current-golang.sh 1.20.14)
 ```
 
 If you want to set this as a default for all your shell session, then consider including it in your bash/zsh profile/rc.
